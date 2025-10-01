@@ -1,0 +1,12 @@
+.setbluebg {
+    background-color: #112e51;
+    margin-left: 3px;
+    border-radius: 0.5rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+}
+
+.setbluebg:hover {
+    color: white;
+    border-color: white;
+}

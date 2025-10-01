@@ -1,0 +1,72 @@
+<template>
+  <lightning-card title="Participants & Allegations" icon-name="standard:case">
+    <div class="toolbar">
+      <lightning-combobox
+        name="role"
+        label="Role"
+        value={role}
+        placeholder="Select role"
+        options={roleOptions}
+        onchange={handleRoleChange}>
+      </lightning-combobox>
+
+      <lightning-input
+        class="filter"
+        type="search"
+        label="Filter participants"
+        value={filter}
+        onchange={handleFilter}>
+      </lightning-input>
+
+      <div class="spacer"></div>
+      <lightning-button variant="neutral" label="Refresh" icon-name="utility:refresh" onclick={refresh}></lightning-button>
+    </div>
+
+    <template if:true={error}>
+      <div class="slds-text-color_error slds-m-around_small">{errorMessage}</div>
+    </template>
+
+    <template if:true={participantsToShow}>
+      <lightning-accordion allow-multiple-sections-open>
+        <template for:each={participantsToShow} for:item="p">
+          <lightning-accordion-section key={p.id} name={p.id} label={p.name}>
+            <div class="participant-grid">
+              <div class="pair"><span>Role</span><strong>{p.role}</strong></div>
+              <div class="pair"><span>Division</span><strong>{p.division}</strong></div>
+              <div class="pair"><span>Grade</span><strong>{p.grade}</strong></div>
+              <div class="pair"><span>Region</span><strong>{p.region}</strong></div>
+              <div class="pair"><span>Field Office</span><strong>{p.fieldOffice}</strong></div>
+              <div class="pair"><span>Non-FDIC</span><strong>{p.nonFdicLabel}</strong></div>
+              <div class="pair full"><span>Email</span><strong>{p.email}</strong></div>
+            </div>
+
+            <div class="allegations-header">
+              <h3>Allegations</h3>
+              <div class="row-actions">
+                <!-- Hook this to a quick action / flow if you wish -->
+                <lightning-button
+                  variant="brand-outline"
+                  label="New Allegation"
+                  data-participant-id={p.id}
+                  onclick={newAllegation}>
+                </lightning-button>
+              </div>
+            </div>
+
+            <lightning-datatable
+              key-field="id"
+              data={p.allegations}
+              columns={allegationColumns}
+              hide-checkbox-column
+              show-row-number-column>
+            </lightning-datatable>
+          </lightning-accordion-section>
+        </template>
+      </lightning-accordion>
+    </template>
+
+    <template if:false={participantsToShow}>
+      <div class="empty">No participants found for this role on this case.</div>
+    </template>
+  </lightning-card>
+</template>

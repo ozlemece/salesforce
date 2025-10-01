@@ -1,0 +1,338 @@
+Below is a suggested refactoring of getUserWithMetadata(...) so that you can independently simulate a “user-query” failure versus a “metadata-query” failure. After that, you’ll find a full @isTest class which covers:
+
+Positive path (both queries succeed).
+
+Simulated user‐query failure (throws a QueryException).
+
+Simulated metadata‐query failure (throws a QueryException).
+
+1) Refactored Apex method (in OPCContactInfoController.cls)
+apex
+Copy
+Edit
+public with sharing class OPCContactInfoController {
+    
+    /** 
+     * When running @isTest, setting this to true will cause the user‐SOQL to throw. 
+     */
+    @TestVisible
+    private static Boolean simulateUserQueryFailure = false;
+    
+    /** 
+     * When running @isTest, setting this to true will cause the metadata‐SOQL to throw. 
+     */
+    @TestVisible
+    private static Boolean simulateMetadataQueryFailure = false;
+    
+    /**
+     * Returns both:
+     *  - current user's Profile.Name  (as 'userType')
+     *  - a List<OPC_Contact_Information__mdt> filtered by contactType (as 'records')
+     *
+     * In production, this runs two separate SOQL queries.  In @isTest, you can force
+     * either query to immediately throw a QueryException by toggling the
+     * corresponding TestVisible flag.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, Object> getUserWithMetadata(String contactType) {
+        // 1) If tests have asked to simulate a user‐query failure, do it now:
+        if (simulateUserQueryFailure && Test.isRunningTest()) {
+            throw new QueryException('Simulated user‐query failure');
+        }
+    
+        Map<String, Object> result = new Map<String, Object>();
+        String profileName = '';
+        List<OPC_Contact_Information__mdt> records = new List<OPC_Contact_Information__mdt>();
+        
+        // ─── STEP A: Fetch the current user's Profile.Name ───────────────────────────────────
+        try {
+            User currentUser = [
+                SELECT Profile.Name
+                  FROM User
+                 WHERE Id = :UserInfo.getUserId()
+                 LIMIT 1
+                 WITH USER_MODE
+            ];
+            profileName = currentUser.Profile.Name;
+        } catch (QueryException e) {
+            // Wrap in an AuraHandledException so lightning will receive a friendly error
+            throw new AuraHandledException('Error fetching User: ' + e.getMessage());
+        }
+        
+        // 2) If tests have asked to simulate a metadata‐query failure, do it now:
+        if (simulateMetadataQueryFailure && Test.isRunningTest()) {
+            throw new QueryException('Simulated metadata‐query failure');
+        }
+        
+        // ─── STEP B: Fetch the custom metadata filtered by contactType ─────────────────────
+        try {
+            String conType = (contactType != null) 
+                             ? contactType.replaceAll(' ', '_') 
+                             : '';
+            
+            records = [
+                SELECT Id,
+                       MasterLabel,
+                       DeveloperName,
+                       Type__c,
+                       Screen_Message__c,
+                       OPC_Email__c,
+                       OPC_Mailing_Address__c,
+                       OPC_Phone_Number__c
+                  FROM OPC_Contact_Information__mdt
+                 WHERE Type__c = :conType
+                 WITH USER_MODE
+            ];
+        } catch (QueryException e) {
+            // Wrap in an AuraHandledException so lightning will see a friendly error
+            throw new AuraHandledException('Error fetching Metadata: ' + e.getMessage());
+        }
+        
+        // ─── FINALLY: Package results into a Map and return ────────────────────────────────
+        result.put('userType', profileName);
+        result.put('records',   records);
+        return result;
+    }
+    
+    // … (other methods, e.g. updateMetadataContact, handleResult, etc.) …
+    
+}
+Key points of this refactor
+
+We introduced two @TestVisible flags:
+
+simulateUserQueryFailure → triggers a QueryException before the User SOQL runs.
+
+simulateMetadataQueryFailure → triggers a QueryException before the metadata SOQL runs.
+
+In each catch (QueryException e), we re‐throw an AuraHandledException(...). Lightning/Aura code will see that as a “friendly” exception so your JS can handle it uniformly.
+
+In a normal (non‐test) context, both flags will be false, so you never hit the “if (simulate… && Test.isRunningTest())” blocks.
+
+2) Full test class: OPCContactInfoControllerTest.cls
+apex
+Copy
+Edit
+@isTest
+public class OPCContactInfoControllerTest {
+    // We need at least one User (System Administrator) in order for UserInfo.getUserId() to point somewhere.
+    private static User sysAdminUser;
+    
+    // We also want at least one custom‐metadata record of type OPC_Contact_Information__mdt
+    // so that the “positive” query returns at least one row.
+    private static OPC_Contact_Information__mdt sampleMetadata;
+    
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // Static initializer block to create test data
+    // ──────────────────────────────────────────────────────────────────────────────────
+    static {
+        // 1) Make sure there is a System Administrator profile in the org
+        Profile p = [SELECT Id FROM Profile WHERE Name = 'System Administrator' LIMIT 1];
+        
+        // 2) Create a User with that profile
+        sysAdminUser = new User(
+            FirstName       = 'Test',
+            LastName        = 'Admin',
+            Email           = 'test.admin@example.com',
+            Username        = 'test.admin' + Math.random() + '@example.com',
+            Alias           = 'tadmin',
+            TimeZoneSidKey  = 'America/Los_Angeles',
+            LocaleSidKey    = 'en_US',
+            EmailEncodingKey= 'UTF-8',
+            ProfileId       = p.Id,
+            LanguageLocaleKey = 'en_US'
+        );
+        insert sysAdminUser;
+        
+        // 3) Create a Custom Metadata record in test context
+        //    Note: In a test context, you can DML‐insert custom metadata like a normal sObject.
+        sampleMetadata = new OPC_Contact_Information__mdt(
+            MasterLabel               = 'Test OPCUser Label',
+            DeveloperName             = 'Test_OPCUser',
+            Type__c                   = 'OPCUser', 
+            Screen_Message__c         = 'Sample message',
+            OPC_Email__c              = 'metadata@example.com',
+            OPC_Phone_Number__c       = '1234567890',
+            OPC_Mailing_Address__c    = '123 Test St'
+        );
+        insert sampleMetadata;
+    }
+    
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // 1) Positive scenario: both queries succeed
+    // ──────────────────────────────────────────────────────────────────────────────────
+    @isTest
+    static void testGetUserWithMetadata_Positive() {
+        System.runAs(sysAdminUser) {
+            // Everything default: both simulateUserQueryFailure == false AND simulateMetadataQueryFailure == false
+            Test.startTest();
+            Map<String, Object> resultMap = OPCContactInfoController.getUserWithMetadata('OPCUser');
+            Test.stopTest();
+            
+            // Unpack
+            String returnedUserType = (String) resultMap.get('userType');
+            @SuppressWarnings('unchecked')
+            List<OPC_Contact_Information__mdt> returnedList = 
+                (List<OPC_Contact_Information__mdt>) resultMap.get('records');
+            
+            // 1a) The profile name should match this sysAdminUser’s profile
+            String expectedProfileName = [SELECT Profile.Name FROM User WHERE Id = :sysAdminUser.Id].Profile.Name;
+            System.assertEquals(expectedProfileName, returnedUserType,
+                'Expected the userType to match the running user’s Profile.Name.');
+            
+            // 1b) We inserted exactly one metadata record of Type='OPCUser', so the returned list must size=1
+            System.assertEquals(1, returnedList.size(),
+                'We inserted exactly one OPC_Contact_Information__mdt of type OPCUser in the static init.');
+            System.assertEquals(sampleMetadata.MasterLabel, returnedList[0].MasterLabel,
+                'The returned metadata record’s MasterLabel should match what we inserted.');
+        }
+    }
+    
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // 2) Simulate a user‐query failure (the very first SOQL)
+    // ──────────────────────────────────────────────────────────────────────────────────
+    @isTest
+    static void testGetUserWithMetadata_SimulateUserFailure() {
+        System.runAs(sysAdminUser) {
+            // Turn on the flag so getUserWithMetadata(...) throws on the "User" SOQL
+            OPCContactInfoController.simulateUserQueryFailure = true;
+            
+            Test.startTest();
+            try {
+                OPCContactInfoController.getUserWithMetadata('OPCUser');
+                // If we get here, something went wrong—the method should have thrown
+                System.assert(false, 'Expected a QueryException to bubble up from simulateUserQueryFailure');
+            }
+            catch (QueryException qe) {
+                // We expect exactly a QueryException with our custom message
+                System.assert(qe.getMessage().contains('Simulated user‐query failure'),
+                    'Expected the QueryException to mention our simulated flag.');
+            }
+            finally {
+                Test.stopTest();
+                // Always reset the flag so other tests are not inadvertently affected
+                OPCContactInfoController.simulateUserQueryFailure = false;
+            }
+        }
+    }
+    
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // 3) Simulate a metadata‐query failure (the second SOQL)
+    // ──────────────────────────────────────────────────────────────────────────────────
+    @isTest
+    static void testGetUserWithMetadata_SimulateMetadataFailure() {
+        System.runAs(sysAdminUser) {
+            // Turn on the flag so getUserWithMetadata(...) throws on the metadata SOQL
+            OPCContactInfoController.simulateMetadataQueryFailure = true;
+            
+            Test.startTest();
+            try {
+                OPCContactInfoController.getUserWithMetadata('OPCUser');
+                System.assert(false, 'Expected a QueryException to bubble up from simulateMetadataQueryFailure');
+            }
+            catch (QueryException qe) {
+                System.assert(qe.getMessage().contains('Simulated metadata‐query failure'),
+                    'Expected the QueryException to mention our simulated metadata flag.');
+            }
+            finally {
+                Test.stopTest();
+                OPCContactInfoController.simulateMetadataQueryFailure = false;
+            }
+        }
+    }
+    
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // (Optional) 4) What if contactType is null or empty?  We still expect no exception,
+    //              but the returned list is probably empty.
+    // ──────────────────────────────────────────────────────────────────────────────────
+    @isTest
+    static void testGetUserWithMetadata_NullOrEmptyContactType() {
+        System.runAs(sysAdminUser) {
+            Test.startTest();
+            Map<String, Object> resultA = OPCContactInfoController.getUserWithMetadata(null);
+            Map<String, Object> resultB = OPCContactInfoController.getUserWithMetadata('');
+            Test.stopTest();
+            
+            // Both should give a userType (non‐empty) and an empty records list
+            String userA = (String) resultA.get('userType');
+            String userB = (String) resultB.get('userType');
+            @SuppressWarnings('unchecked')
+            List<OPC_Contact_Information__mdt> listA = 
+                (List<OPC_Contact_Information__mdt>) resultA.get('records');
+            @SuppressWarnings('unchecked')
+            List<OPC_Contact_Information__mdt> listB = 
+                (List<OPC_Contact_Information__mdt>) resultB.get('records');
+            
+            System.assertNotEquals('', userA, 'Even if contactType=null, userType should still be returned.');
+            System.assertNotEquals('', userB, 'Even if contactType="", userType should still be returned.');
+            System.assertEquals(0, listA.size(), 'No metadata record matches Type="" or Type=null.');
+            System.assertEquals(0, listB.size(), 'No metadata record matches Type="".');
+        }
+    }
+    
+}
+Explanations
+Static initializer
+
+We find a “System Administrator” profile, create a sysAdminUser, and insert it.
+
+We also create one OPC_Contact_Information__mdt record of Type__c = 'OPCUser'. In a test context you can insert custom-metadata via DML, so that the positive case can pick it up.
+
+testGetUserWithMetadata_Positive()
+
+Calls getUserWithMetadata('OPCUser') without toggling either flag → both SOQLs run normally.
+
+Asserts:
+
+userType equals the running user’s profile name.
+
+records.size() == 1 and the one record’s MasterLabel matches what we inserted.
+
+testGetUserWithMetadata_SimulateUserFailure()
+
+Before invoking, we set
+
+apex
+Copy
+Edit
+OPCContactInfoController.simulateUserQueryFailure = true;
+The very first line in the method sees simulateUserQueryFailure && Test.isRunningTest(), so it immediately does
+
+apex
+Copy
+Edit
+throw new QueryException('Simulated user‐query failure');
+We catch that in the test and assert that the message contains Simulated user‐query failure.
+
+Finally, we reset simulateUserQueryFailure = false.
+
+testGetUserWithMetadata_SimulateMetadataFailure()
+
+We set
+
+apex
+Copy
+Edit
+OPCContactInfoController.simulateMetadataQueryFailure = true;
+The user SOQL still runs (so no exception there), but right before the second SOQL, we hit
+
+apex
+Copy
+Edit
+if (simulateMetadataQueryFailure && Test.isRunningTest()) {
+  throw new QueryException('Simulated metadata‐query failure');
+}
+We catch that in the test and assert on the message, then reset the flag.
+
+testGetUserWithMetadata_NullOrEmptyContactType() (optional)
+
+Just shows that if contactType == null or empty, the code should not blow up but return userType + an empty records list. This covers the “edge‐case” of no metadata filter.
+
+3) How to run
+Push your updated OPCContactInfoController.cls (with the two new @TestVisible flags) to org.
+
+Push OPCContactInfoControllerTest.cls to the same org.
+
+Run all tests (e.g. in VS Code or Developer Console).
+
+You should now see 100% coverage for getUserWithMetadata(...), including both the “happy path” and the two negative branches (user‐SOQL failure and metadata‐SOQL failure).

@@ -1,0 +1,23 @@
+:host { display:block; }
+.toolbar { display:flex; gap:.75rem; align-items:center; padding:.25rem .75rem .5rem; }
+.toolbar .filter { min-width: 240px; }
+.toolbar .spacer { flex:1; }
+
+.participant-grid {
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap:.5rem 1rem;
+  margin:.5rem 0 1rem;
+}
+.participant-grid .pair { display:flex; gap:.5rem; align-items:center; }
+.participant-grid .pair span { color: var(--lwc-colorTextLabel, #444); min-width: 120px; }
+.participant-grid .pair.full { grid-column: 1 / -1; }
+
+.allegations-header {
+  margin:.5rem 0; display:flex; align-items:center; justify-content:space-between;
+}
+.empty { padding:1rem; color:#666; text-align:center; }
+
+@media (max-width: 900px){
+  .participant-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}

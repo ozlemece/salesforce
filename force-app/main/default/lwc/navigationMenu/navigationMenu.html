@@ -1,0 +1,53 @@
+<template>
+    <lightning-card title="Navigation Menu" icon-name="action:new">
+        <!-- Default Navigation Items -->
+        <ul class="slds-list_vertical slds-has-dividers_bottom">
+            <li class="slds-item">
+                <a href="/home" class="slds-text-link" target="_blank">
+                    <lightning-icon icon-name="utility:home" size="small" alternative-text="Home"></lightning-icon>
+                       Home
+                </a>
+            </li>
+            <li class="slds-item">
+                <a href="/account" class="slds-text-link" target="_blank">
+                    <lightning-icon icon-name="utility:user" size="small" alternative-text="Account"></lightning-icon>
+                       Account
+                </a>
+            </li>
+            <li class="slds-item">
+                <a href="/contact" class="slds-text-link" target="_blank">
+                    <lightning-icon icon-name="utility:email" size="small" alternative-text="Contact"></lightning-icon>
+                       Contact
+                </a>
+            </li>
+            <li class="slds-item">
+                <a href="/logout" class="slds-text-link" target="_blank">
+                    <lightning-icon icon-name="utility:logout" size="small" alternative-text="Logout"></lightning-icon>
+                       Logout
+                </a>
+            </li>
+        </ul>
+
+        <!-- Dynamic Navigation Menu Items from Apex -->
+        <template if:true={menuItems}>
+            <ul class="slds-list_vertical slds-has-dividers_bottom">
+                <template for:each={menuItems} for:item="item">
+                    <li key={item.id} class="slds-item">
+                        <a href={item.url} target="_blank" class="slds-text-link">
+                            <template if:true={item.imageUrl}>
+                                <img src={item.imageUrl} alt={item.label} class="menu-item-image" />
+                            </template>
+                            {item.label}
+                        </a>
+                    </li>
+                </template>
+            </ul>
+        </template>
+
+        <!-- Error Message Display -->
+        <template if:true={error}>
+            <p class="slds-text-color_error">{error}</p>
+        </template>
+    </lightning-card>
+</template>
+

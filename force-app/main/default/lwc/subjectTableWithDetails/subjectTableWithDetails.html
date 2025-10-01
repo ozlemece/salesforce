@@ -1,0 +1,134 @@
+<template>
+    <lightning-card title="Subjects">
+        <!-- "New Subject" button placed in card header -->
+        <lightning-button
+            slot="actions"
+            label="New Subject"
+            variant="brand"
+            onclick={openNewModal}>
+        </lightning-button>
+
+        <!-- Subject list table -->
+        <div class="table">
+            <lightning-datatable
+                key-field="Id"
+                data={rows}
+                columns={columns}
+                hide-checkbox-column=true
+                max-row-selection="1"
+                onrowselection={handleRowSelection}
+                onrowaction={handleRowAction}
+                show-row-number-column>
+            </lightning-datatable>
+        </div>
+
+        <!-- Subject Details -->
+        <template if:true={selectedId}>
+            <div class="divider"></div>
+
+            <div class="details-header">
+                
+                <div class="btns">
+                    <lightning-button
+                        label="Open Record"
+                        variant="brand-outline"
+                        onclick={navToRecord}>
+                    </lightning-button>
+                    <!-- Optional Save button -->
+                    <!--
+                    <lightning-button
+                        class="slds-m-left_small"
+                        label="Save"
+                        variant="brand"
+                        onclick={submitForm}>
+                    </lightning-button>
+                    -->
+                </div>
+            </div>
+
+            <lightning-record-edit-form
+                record-id={selectedId}
+                object-api-name="Subject__c"
+                onsuccess={handleSaveSuccess}
+                onerror={handleFormError}
+                density="comfy">
+
+                <!-- 3-column layout -->
+                <div class="three-col slds-gutters">
+
+                    <!-- Column 1: Subject -->
+                    <div class="col">
+                        <div class="section-title">Subject</div>
+                        <lightning-input-field field-name="Name" disabled="true"></lightning-input-field>
+                    </div>
+
+                    <!-- Column 2: Grade / Location -->
+                    <div class="col">
+                        <div class="section-title">Grade / Location</div>
+                        <lightning-output-field field-name="Grade__c"></lightning-output-field>
+                        <lightning-output-field field-name="Division__c"></lightning-output-field>
+                        <lightning-output-field field-name="Region__c"></lightning-output-field>
+                        <lightning-output-field field-name="Field_Office__c"></lightning-output-field>
+                    </div>
+
+                    <!-- Column 3: Dates -->
+                    <div class="col">
+                        <div class="section-title">Dates</div>
+                        <lightning-input-field field-name="Occurred_Date__c"></lightning-input-field>
+                        <lightning-input-field field-name="Reported_Date__c"></lightning-input-field>
+                        <lightning-input-field field-name="Manager_Notified_Date__c"></lightning-input-field>
+                        <lightning-input-field field-name="Ongoing__c"></lightning-input-field>
+                        <lightning-input-field field-name="Substantiated__c"></lightning-input-field>
+                    </div>
+                </div>
+
+                <!-- Bottom section -->
+                <div class="divider"></div>
+
+                <div class="stacked">
+                    <div class="section-title">Description</div>
+                    <lightning-input-field field-name="Description__c"></lightning-input-field>
+                </div>
+            </lightning-record-edit-form>
+        </template>
+
+        <template if:false={selectedId}>
+            <div class="empty-hint">Select a Subject to view its details.</div>
+        </template>
+    </lightning-card>
+
+    <!-- New Subject Modal -->
+    <template if:true={showNewModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-text-heading_medium">New Subject</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-record-edit-form
+                        object-api-name="Subject__c"
+                        onsuccess={handleNewSuccess}
+                        onerror={handleNewError}>
+
+                        <!-- Relate to Case -->
+                        <lightning-input-field field-name="Case__c" value={effectiveCaseId}></lightning-input-field>
+
+                        <!-- Quick-create fields -->
+                        <lightning-input-field field-name="Name"></lightning-input-field>
+                        <lightning-input-field field-name="Employee__c"></lightning-input-field>
+                        <lightning-input-field field-name="Division__c"></lightning-input-field>
+                        <lightning-input-field field-name="Grade__c"></lightning-input-field>
+                        <lightning-input-field field-name="Corrective_Action_Taken__c"></lightning-input-field>
+                        <lightning-input-field field-name="Action_Taken__c"></lightning-input-field>
+
+                        <div class="slds-m-top_medium slds-grid slds-grid_align-end slds-gutters_small">
+                            <lightning-button variant="neutral" label="Cancel" onclick={closeNewModal}></lightning-button>
+                            <lightning-button variant="brand" type="submit" label="Save"></lightning-button>
+                        </div>
+                    </lightning-record-edit-form>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

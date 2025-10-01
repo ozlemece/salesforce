@@ -1,0 +1,48 @@
+.three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: .75rem;
+    padding: 0 .75rem .75rem .75rem;
+}
+
+.col .section-title,
+.stacked .section-title {
+    font-weight: 600;
+    margin: .25rem 0 .25rem 0;
+}
+
+.stacked {
+    padding: 0 .75rem .75rem .75rem;
+}
+
+.table {
+    padding: 0 .75rem .75rem .75rem;
+}
+
+.divider {
+    height: 1px;
+    background: var(--lwc-colorBorder);
+    margin: 0.5rem 0 1rem 0;
+}
+
+.details-header {
+    display: flex;
+    align-items: center;
+    padding: 0 .75rem;
+}
+
+.title {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.btns {
+    margin-left: auto;   /* pushes group to the right */
+    display: flex;
+    gap: .5rem;
+}
+
+.empty-hint {
+    padding: 0.75rem;
+    color: var(--lwc-colorTextWeak);
+}

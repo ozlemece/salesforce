@@ -1,0 +1,116 @@
+<template>
+    <lightning-card title="Number Guessing Game" icon-name="utility:number_input">
+        <div class="game-container">
+            <!-- Game Status -->
+            <div class="game-status">
+                <h2 class="status-text">{gameStatus}</h2>
+                <div class="game-info">
+                    <div class="info-item">
+                        <span class="info-label">Attempts:</span>
+                        <span class="info-value">{attempts}/{maxAttempts}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Difficulty:</span>
+                        <span class="info-value">{difficulty}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Range:</span>
+                        <span class="info-value">1-{maxNumber}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Input -->
+            <div class="game-input" if:true={gameActive}>
+                <div class="input-section">
+                    <lightning-input 
+                        type="number" 
+                        label="Enter your guess:" 
+                        value={userGuess}
+                        onchange={handleGuessChange}
+                        min="1"
+                        max={maxNumber}
+                        placeholder="Enter a number"
+                        class="guess-input">
+                    </lightning-input>
+                    <lightning-button 
+                        label="Guess!" 
+                        variant="brand" 
+                        onclick={makeGuess}
+                        disabled={isGuessDisabled}
+                        class="guess-button">
+                    </lightning-button>
+                </div>
+            </div>
+
+            <!-- Game History -->
+            <div class="game-history" if:true={hasGuesses}>
+                <h3 class="history-title">Your Guesses:</h3>
+                <div class="guesses-list">
+                    <template for:each={guessHistory} for:item="guess" for:index="index">
+                        <div key={guess.id} class="guess-item" data-result={guess.result}>
+                            <span class="guess-number">#{guess.attemptNumber}</span>
+                            <span class="guess-value">{guess.value}</span>
+                            <span class="guess-feedback">{guess.feedback}</span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Hints Section -->
+            <div class="hints-section" if:true={showHints}>
+                <h3 class="hints-title">Hints:</h3>
+                <div class="hints-list">
+                    <template for:each={availableHints} for:item="hint" for:index="index">
+                        <div key={hint.id} class="hint-item">
+                            <lightning-button 
+                                label={hint.text} 
+                                variant="neutral" 
+                                onclick={useHint}
+                                data-hint-id={hint.id}
+                                disabled={hint.used}
+                                class="hint-button">
+                            </lightning-button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Game Controls -->
+            <div class="game-controls">
+                <lightning-button 
+                    label="New Game" 
+                    variant="brand" 
+                    onclick={startNewGame}
+                    class="control-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Easy (1-50)" 
+                    variant="neutral" 
+                    onclick={setDifficulty}
+                    data-difficulty="easy"
+                    class="control-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Medium (1-100)" 
+                    variant="neutral" 
+                    onclick={setDifficulty}
+                    data-difficulty="medium"
+                    class="control-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Hard (1-200)" 
+                    variant="neutral" 
+                    onclick={setDifficulty}
+                    data-difficulty="hard"
+                    class="control-button">
+                </lightning-button>
+            </div>
+
+            <!-- Game Instructions -->
+            <div class="instructions">
+                <p>Guess the secret number! Use hints to help you. The game gets harder with higher difficulty levels.</p>
+            </div>
+        </div>
+    </lightning-card>
+</template>

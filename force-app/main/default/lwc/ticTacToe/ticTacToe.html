@@ -1,0 +1,54 @@
+<template>
+    <lightning-card title="Tic-Tac-Toe Game" icon-name="utility:game">
+        <div class="game-container">
+            <!-- Game Status -->
+            <div class="game-status">
+                <h2 class="status-text">{gameStatus}</h2>
+                <div class="score-board">
+                    <div class="score-item">
+                        <span class="player-label">Player X:</span>
+                        <span class="score-value">{playerXScore}</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="player-label">Player O:</span>
+                        <span class="score-value">{playerOScore}</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="player-label">Draws:</span>
+                        <span class="score-value">{drawScore}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Board -->
+            <div class="game-board">
+                <template for:each={board} for:item="cell" for:index="index">
+                    <div key={cell} class="cell" data-index={index} onclick={handleCellClick}>
+                        {cell}
+                    </div>
+                </template>
+            </div>
+
+            <!-- Game Controls -->
+            <div class="game-controls">
+                <lightning-button 
+                    label="New Game" 
+                    variant="brand" 
+                    onclick={startNewGame}
+                    class="control-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Reset Scores" 
+                    variant="neutral" 
+                    onclick={resetScores}
+                    class="control-button">
+                </lightning-button>
+            </div>
+
+            <!-- Game Instructions -->
+            <div class="instructions">
+                <p>Click on any empty cell to make your move. Player X goes first!</p>
+            </div>
+        </div>
+    </lightning-card>
+</template>

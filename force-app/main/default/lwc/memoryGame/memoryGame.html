@@ -1,0 +1,81 @@
+<template>
+    <lightning-card title="Memory Card Game" icon-name="utility:cards">
+        <div class="game-container">
+            <!-- Game Status -->
+            <div class="game-status">
+                <h2 class="status-text">{gameStatus}</h2>
+                <div class="game-info">
+                    <div class="info-item">
+                        <span class="info-label">Moves:</span>
+                        <span class="info-value">{moves}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Time:</span>
+                        <span class="info-value">{formattedTime}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Matches:</span>
+                        <span class="info-value">{matches}/{totalPairs}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Board -->
+            <div class="game-board">
+                <template for:each={cards} for:item="card" for:index="index">
+                    <div key={card.id} 
+                         class="card" 
+                         data-card-id={card.id} 
+                         onclick={handleCardClick}
+                         class:flipped={card.isFlipped}
+                         class:matched={card.isMatched}>
+                        <div class="card-inner">
+                            <div class="card-front">
+                                <lightning-icon icon-name="utility:question" size="large"></lightning-icon>
+                            </div>
+                            <div class="card-back">
+                                <lightning-icon icon-name={card.icon} size="large"></lightning-icon>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Game Controls -->
+            <div class="game-controls">
+                <lightning-button 
+                    label="New Game" 
+                    variant="brand" 
+                    onclick={startNewGame}
+                    class="control-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Easy (4x3)" 
+                    variant="neutral" 
+                    onclick={setDifficulty}
+                    data-difficulty="easy"
+                    class="control-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Medium (4x4)" 
+                    variant="neutral" 
+                    onclick={setDifficulty}
+                    data-difficulty="medium"
+                    class="control-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Hard (5x4)" 
+                    variant="neutral" 
+                    onclick={setDifficulty}
+                    data-difficulty="hard"
+                    class="control-button">
+                </lightning-button>
+            </div>
+
+            <!-- Game Instructions -->
+            <div class="instructions">
+                <p>Click on cards to flip them. Match pairs to win! Try to complete the game in as few moves as possible.</p>
+            </div>
+        </div>
+    </lightning-card>
+</template>

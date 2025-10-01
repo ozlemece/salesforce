@@ -1,0 +1,93 @@
+<template>
+    <lightning-card title="Snake Game" icon-name="utility:snake">
+        <div class="game-container">
+            <!-- Game Status -->
+            <div class="game-status">
+                <h2 class="status-text">{gameStatus}</h2>
+                <div class="game-info">
+                    <div class="info-item">
+                        <span class="info-label">Score:</span>
+                        <span class="info-value">{score}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">High Score:</span>
+                        <span class="info-value">{highScore}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Speed:</span>
+                        <span class="info-value">{gameSpeed}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Canvas -->
+            <div class="game-canvas-container">
+                <canvas class="game-canvas" 
+                        width="400" 
+                        height="400" 
+                        data-canvas="snake-canvas">
+                </canvas>
+            </div>
+
+            <!-- Game Controls -->
+            <div class="game-controls">
+                <lightning-button 
+                    label="Start Game" 
+                    variant="brand" 
+                    onclick={startGame}
+                    class="control-button"
+                    if:false={gameRunning}>
+                </lightning-button>
+                <lightning-button 
+                    label="Pause" 
+                    variant="neutral" 
+                    onclick={pauseGame}
+                    class="control-button"
+                    if:true={gameRunning}>
+                </lightning-button>
+                <lightning-button 
+                    label="Reset" 
+                    variant="destructive" 
+                    onclick={resetGame}
+                    class="control-button">
+                </lightning-button>
+            </div>
+
+            <!-- Speed Controls -->
+            <div class="speed-controls">
+                <lightning-button 
+                    label="Slow" 
+                    variant="neutral" 
+                    onclick={setSpeed}
+                    data-speed="slow"
+                    class="speed-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Normal" 
+                    variant="neutral" 
+                    onclick={setSpeed}
+                    data-speed="normal"
+                    class="speed-button">
+                </lightning-button>
+                <lightning-button 
+                    label="Fast" 
+                    variant="neutral" 
+                    onclick={setSpeed}
+                    data-speed="fast"
+                    class="speed-button">
+                </lightning-button>
+            </div>
+
+            <!-- Game Instructions -->
+            <div class="instructions">
+                <p>Use arrow keys to control the snake. Eat the red food to grow and increase your score!</p>
+                <div class="controls-help">
+                    <span class="control-key">↑</span>
+                    <span class="control-key">↓</span>
+                    <span class="control-key">←</span>
+                    <span class="control-key">→</span>
+                </div>
+            </div>
+        </div>
+    </lightning-card>
+</template>
